@@ -1,6 +1,34 @@
 # CHANGELOG
 
 
+## v0.1.4 (2026-03-17)
+
+### Bug Fixes
+
+- Log error details before raising 502 HTTPException
+  ([`ecfdcb5`](https://github.com/jschell/reddit-rss-cleaner/commit/ecfdcb5e09a8c7ac998c1b7284f6476b3d5f20bf))
+
+Without this, the cause of upstream failures (403, 429, timeout, network error) was only visible in
+  the HTTP response body, not the container logs, making it impossible to diagnose from Portainer.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+- Shorten 429 log message to satisfy ruff E501
+  ([`f1e7a5c`](https://github.com/jschell/reddit-rss-cleaner/commit/f1e7a5ca0c931921305703f5170c6a9d6b3bfad9))
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+### Documentation
+
+- Clarify FETCHER_ALLOW_PRIVATE_NETWORKS requirement and update stack example
+  ([`68d508a`](https://github.com/jschell/reddit-rss-cleaner/commit/68d508ac1874aa1c5f7b00f3f1c3aa06e440f46d))
+
+Miniflux blocks private network IPs by default; without this flag feed fetching silently fails.
+  Updated the example stack to match the working config and renamed the section to "Docker stack".
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+
 ## v0.1.3 (2026-03-17)
 
 ### Bug Fixes
