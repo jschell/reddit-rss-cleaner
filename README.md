@@ -9,7 +9,7 @@ Reddit's RSS feeds set `<link>` to the comments page for every entry — even wh
 1. Fetches the raw Reddit Atom feed
 2. Parses the `[link]` anchor from each entry's HTML content to extract the external article URL
 3. Rebuilds a clean RSS 2.0 feed with corrected `<link>` URLs and a prepended *Article / Comments* navigation header
-4. Self-posts (where `[link]` points back to Reddit) are detected and left as-is
+4. Self-posts (where `[link]` points back to Reddit) are detected and left as-is 
 
 ## API
 
