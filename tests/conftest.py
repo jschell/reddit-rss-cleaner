@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-import reddit_rss_cleaner.main as main_module
+from reddit_rss_cleaner.main import clear_cache
 
 FIXTURE_RSS_XML = """\
 <?xml version="1.0" encoding="UTF-8"?>
@@ -42,9 +42,9 @@ FIXTURE_RSS_XML = """\
 
 
 @pytest.fixture(autouse=True)
-def clear_cache() -> None:
+def reset_cache() -> None:
     """Clear the feed cache before each test."""
-    main_module._cache.clear()
+    clear_cache()
 
 
 @pytest.fixture()

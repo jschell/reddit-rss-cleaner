@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
+from time import struct_time
+from typing import Any, cast
 
 import feedparser  # type: ignore[import-untyped]
 from bs4 import BeautifulSoup
@@ -28,7 +30,8 @@ def extract_external_url(entry_html: str, fallback_url: str) -> tuple[str, bool]
     """
     try:
         soup = BeautifulSoup(entry_html, "lxml")
-        link_anchor = soup.find("a", string="[link]")
+        all_anchors = soup.find_all("a")
+        link_anchor = next((a for a in all_anchors if a.get_text() == "[link]"), None)
         if link_anchor is None:
             return fallback_url, False
         href = link_anchor.get("href", "")
@@ -47,26 +50,28 @@ def parse_feed(raw_rss: str) -> list[ParsedEntry]:
     Parse raw Reddit RSS XML into a list of ParsedEntry objects.
     Uses feedparser for RSS parsing, BeautifulSoup for HTML content.
     """
-    feed = feedparser.parse(raw_rss)
+    feed: Any = feedparser.parse(raw_rss)  # pyright: ignore[reportUnknownMemberType]
     entries: list[ParsedEntry] = []
 
     for entry in feed.entries:
-        comments_url: str = entry.get("link", "")
-        title: str = entry.get("title", "")
-        author: str = entry.get("author", "")
+        comments_url = str(entry.get("link") or "")
+        title = str(entry.get("title") or "")
+        author = str(entry.get("author") or "")
 
+        published_iso = ""
         published_parsed = entry.get("published_parsed")
-        if published_parsed is not None:
+        if published_parsed is not None and isinstance(published_parsed, struct_time):
             published_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", published_parsed)
-        else:
-            published_iso = ""
 
         content_html = ""
-        content_list = entry.get("content")
-        if content_list:
-            content_html = content_list[0].get("value", "")
-        elif entry.get("summary"):
-            content_html = entry.summary
+        raw_content = entry.get("content")
+        if raw_content and isinstance(raw_content, list) and raw_content:
+            content_item = cast("dict[str, Any]", raw_content[0])
+            content_html = str(content_item.get("value") or "")
+        if not content_html:
+            summary = entry.get("summary")
+            if summary and isinstance(summary, str):
+                content_html = summary
 
         entry_url, is_self_post = extract_external_url(content_html, comments_url)
 

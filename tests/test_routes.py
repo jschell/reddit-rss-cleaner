@@ -1,19 +1,20 @@
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
+from conftest import FIXTURE_RSS_XML
 from httpx import ASGITransport, AsyncClient
 
 from reddit_rss_cleaner.main import app
-from conftest import FIXTURE_RSS_XML
 
 
 @pytest.fixture()
-async def client() -> AsyncClient:
+async def client() -> AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
-        yield c  # type: ignore[misc]
+        yield c
 
 
 async def test_subreddit_feed_returns_200_rss(client: AsyncClient) -> None:

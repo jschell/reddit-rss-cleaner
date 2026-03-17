@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any
 
 from feedgen.feed import FeedGenerator  # type: ignore[import-untyped]
 
@@ -23,7 +24,7 @@ def build_rss_feed(
     Entry content → original HTML + prepended Article/Comments links
     Entry id → SHA-1 of comments URL (stable, deduplicated)
     """
-    fg = FeedGenerator()
+    fg: Any = FeedGenerator()
     fg.id(f"https://www.reddit.com/r/{subreddit}/{sort}")
     fg.title(f"/r/{subreddit} - {sort}")
     fg.link(href=f"https://www.reddit.com/r/{subreddit}/{sort}", rel="alternate")
@@ -31,7 +32,7 @@ def build_rss_feed(
     fg.language("en")
 
     for entry in entries:
-        fe = fg.add_entry(order="append")
+        fe: Any = fg.add_entry(order="append")
 
         entry_id = hashlib.sha1(entry.comments_url.encode()).hexdigest()
         fe.id(entry_id)
@@ -44,7 +45,7 @@ def build_rss_feed(
         if entry.published_iso:
             try:
                 dt = datetime.strptime(entry.published_iso, "%Y-%m-%dT%H:%M:%SZ").replace(
-                    tzinfo=timezone.utc
+                    tzinfo=UTC
                 )
                 fe.published(dt)
                 fe.updated(dt)
