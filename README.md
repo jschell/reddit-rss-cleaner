@@ -75,9 +75,10 @@ services:
       LOG_LEVEL: info
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 30s
+      interval: 15s
       timeout: 5s
       retries: 3
+      start_period: 10s
     networks:
       - internal
     # Do NOT expose a host port — Miniflux reaches it via the internal network
