@@ -57,7 +57,7 @@ async def subreddit_feed(subreddit: str, sort: str) -> Response:
             logger.error("Reddit blocked request for r/%s/%s: 403 Forbidden", subreddit, sort)
             raise HTTPException(status_code=502, detail="Reddit returned 403 Forbidden") from exc
         if status == 429:
-            logger.error("Reddit rate limit hit for r/%s/%s: 429 Too Many Requests", subreddit, sort)
+            logger.error("Reddit rate limit hit for r/%s/%s: 429", subreddit, sort)
             raise HTTPException(status_code=502, detail="Reddit rate limit exceeded (429)") from exc
         logger.error("Reddit returned HTTP %s for r/%s/%s", status, subreddit, sort)
         raise HTTPException(status_code=502, detail=f"Reddit returned HTTP {status}") from exc
