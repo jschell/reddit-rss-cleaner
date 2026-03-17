@@ -68,8 +68,7 @@ services:
       - internal
 
   reddit-rss-cleaner:
-    image: reddit-rss-cleaner          # or build: . if building locally
-    # build: .
+    image: DOCKERHUB_USERNAME/reddit-rss-cleaner:latest
     restart: unless-stopped
     environment:
       CACHE_TTL: "300"
