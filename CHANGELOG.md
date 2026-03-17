@@ -1,6 +1,21 @@
 # CHANGELOG
 
 
+## v0.1.2 (2026-03-17)
+
+### Bug Fixes
+
+- Use PAT in release workflow so tag push triggers publish
+  ([`275e6f8`](https://github.com/jschell/reddit-rss-cleaner/commit/275e6f8bc56ebff45ea329b6d62d846aaa837c8d))
+
+GITHUB_TOKEN-triggered events cannot fire other workflows per GitHub's security model. Switching to
+  GH_PAT means the tag push is attributed to a real user, which allows publish.yml to run.
+
+Requires a GH_PAT secret with 'contents: write' scope set in repo Settings → Secrets.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+
 ## v0.1.1 (2026-03-17)
 
 ### Bug Fixes
