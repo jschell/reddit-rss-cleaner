@@ -68,17 +68,17 @@ services:
       - internal
 
   reddit-rss-cleaner:
-    image: reddit-rss-cleaner          # or build: . if building locally
-    # build: .
+    image: DOCKERHUB_USERNAME/reddit-rss-cleaner:latest
     restart: unless-stopped
     environment:
       CACHE_TTL: "300"
       LOG_LEVEL: info
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 30s
+      interval: 15s
       timeout: 5s
       retries: 3
+      start_period: 10s
     networks:
       - internal
     # Do NOT expose a host port — Miniflux reaches it via the internal network
@@ -135,6 +135,29 @@ uv run --frozen pyright
 ```
 
 CI runs the same four checks on every push via GitHub Actions (`.github/workflows/ci.yml`).
+
+## Releases
+
+Releases are automated. Merging to `main` triggers `release.yml`, which uses [python-semantic-release](https://python-semantic-release.readthedocs.io/) to analyse commits, bump `pyproject.toml`, and push a `v*` tag. That tag fires `publish.yml`, which builds and pushes the Docker image to Docker Hub.
+
+Version bumps are driven by [Conventional Commits](https://www.conventionalcommits.org/):
+
+| Commit prefix | Version bump |
+|---|---|
+| `fix:` | patch — `0.1.0` → `0.1.1` |
+| `feat:` | minor — `0.1.0` → `0.2.0` |
+| `feat!:` or `BREAKING CHANGE:` footer | major — `0.1.0` → `1.0.0` |
+| `chore:`, `docs:`, `test:`, `refactor:` | no release |
+
+Examples:
+
+```
+feat: add /r/{subreddit}/top endpoint
+fix: handle empty content list in feedparser entries
+feat!: drop support for Python 3.11
+```
+
+Commits that don't match any release type (e.g. `chore: update deps`) are merged normally without triggering a release.
 
 ## License
 
