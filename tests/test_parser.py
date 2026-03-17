@@ -47,7 +47,7 @@ def test_extract_external_url_missing_link_returns_fallback() -> None:
 
 def test_extract_external_url_malformed_html_returns_fallback() -> None:
     # Must not raise an exception
-    url, is_self = extract_external_url(MALFORMED_HTML, FALLBACK)
+    url, _ = extract_external_url(MALFORMED_HTML, FALLBACK)
     assert url == FALLBACK
 
 

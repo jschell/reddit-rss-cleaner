@@ -24,6 +24,11 @@ VALID_SORTS = frozenset({"new", "hot", "top", "rising"})
 _cache: TTLCache = TTLCache(ttl_seconds=int(os.environ.get("CACHE_TTL", "300")))
 
 
+def clear_cache() -> None:
+    """Clear the feed cache. Exposed for use in tests."""
+    _cache.clear()
+
+
 @app.get("/r/{subreddit}/{sort}", response_class=Response)
 async def subreddit_feed(subreddit: str, sort: str) -> Response:
     """Return cleaned RSS for a subreddit."""
@@ -44,22 +49,22 @@ async def subreddit_feed(subreddit: str, sort: str) -> Response:
     except httpx.HTTPStatusError as exc:
         status = exc.response.status_code
         if status == 404:
-            raise HTTPException(status_code=404, detail=f"Subreddit r/{subreddit} not found")
+            raise HTTPException(
+                status_code=404, detail=f"Subreddit r/{subreddit} not found"
+            ) from exc
         if status == 403:
-            raise HTTPException(status_code=502, detail="Reddit returned 403 Forbidden")
+            raise HTTPException(status_code=502, detail="Reddit returned 403 Forbidden") from exc
         if status == 429:
-            raise HTTPException(status_code=502, detail="Reddit rate limit exceeded (429)")
-        raise HTTPException(status_code=502, detail=f"Reddit returned HTTP {status}")
-    except httpx.TimeoutException:
-        raise HTTPException(status_code=502, detail="Request to Reddit timed out")
+            raise HTTPException(status_code=502, detail="Reddit rate limit exceeded (429)") from exc
+        raise HTTPException(status_code=502, detail=f"Reddit returned HTTP {status}") from exc
+    except httpx.TimeoutException as exc:
+        raise HTTPException(status_code=502, detail="Request to Reddit timed out") from exc
     except httpx.RequestError as exc:
-        raise HTTPException(status_code=502, detail=f"Network error: {exc}")
+        raise HTTPException(status_code=502, detail=f"Network error: {exc}") from exc
 
     entries = parse_feed(raw_rss)
     if not entries:
-        raise HTTPException(
-            status_code=404, detail=f"No entries found in r/{subreddit}/{sort}"
-        )
+        raise HTTPException(status_code=404, detail=f"No entries found in r/{subreddit}/{sort}")
 
     feed_xml = build_rss_feed(subreddit, sort, entries)
     _cache.set(cache_key, feed_xml)
