@@ -49,17 +49,23 @@ async def subreddit_feed(subreddit: str, sort: str) -> Response:
     except httpx.HTTPStatusError as exc:
         status = exc.response.status_code
         if status == 404:
+            logger.warning("r/%s not found (404)", subreddit)
             raise HTTPException(
                 status_code=404, detail=f"Subreddit r/{subreddit} not found"
             ) from exc
         if status == 403:
+            logger.error("Reddit blocked request for r/%s/%s: 403 Forbidden", subreddit, sort)
             raise HTTPException(status_code=502, detail="Reddit returned 403 Forbidden") from exc
         if status == 429:
+            logger.error("Reddit rate limit hit for r/%s/%s: 429", subreddit, sort)
             raise HTTPException(status_code=502, detail="Reddit rate limit exceeded (429)") from exc
+        logger.error("Reddit returned HTTP %s for r/%s/%s", status, subreddit, sort)
         raise HTTPException(status_code=502, detail=f"Reddit returned HTTP {status}") from exc
     except httpx.TimeoutException as exc:
+        logger.error("Request to Reddit timed out for r/%s/%s: %s", subreddit, sort, exc)
         raise HTTPException(status_code=502, detail="Request to Reddit timed out") from exc
     except httpx.RequestError as exc:
+        logger.error("Network error fetching r/%s/%s: %s", subreddit, sort, exc)
         raise HTTPException(status_code=502, detail=f"Network error: {exc}") from exc
 
     entries = parse_feed(raw_rss)

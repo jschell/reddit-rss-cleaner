@@ -43,9 +43,11 @@ docker run -d -p 5000:5000 reddit-rss-cleaner
 
 The service acts as a transparent proxy — subscribe to it exactly as you would subscribe to a Reddit feed directly, just replacing `www.reddit.com` with the address of this service.
 
-### Docker Compose (recommended)
+### Docker stack (recommended)
 
 Place both containers on a shared network so Miniflux can reach the cleaner by service name without exposing it to the host.
+
+> **Important:** Miniflux blocks outgoing requests to private/internal IP ranges by default (SSRF protection). Because `reddit-rss-cleaner` sits on an internal Docker network, you must set `FETCHER_ALLOW_PRIVATE_NETWORKS: "1"` on the Miniflux service or feed fetching will fail with a network error.
 
 ```yaml
 services:
@@ -64,21 +66,21 @@ services:
       CREATE_ADMIN: "1"
       ADMIN_USERNAME: admin
       ADMIN_PASSWORD: changeme
+      FETCHER_ALLOW_PRIVATE_NETWORKS: "1"  # required — cleaner is on a private Docker network
     networks:
       - internal
 
   reddit-rss-cleaner:
-    image: DOCKERHUB_USERNAME/reddit-rss-cleaner:latest
+    image: jschell/reddit-rss-cleaner:latest
     restart: unless-stopped
     environment:
       CACHE_TTL: "300"
       LOG_LEVEL: info
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 15s
+      interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 10s
     networks:
       - internal
     # Do NOT expose a host port — Miniflux reaches it via the internal network
@@ -107,7 +109,7 @@ volumes:
 
 ### Adding feeds in Miniflux
 
-Inside the `docker-compose` network the service is reachable as `http://reddit-rss-cleaner:5000`. Use that address as the feed URL:
+Inside the Docker network the service is reachable as `http://reddit-rss-cleaner:5000`. Use that address as the feed URL:
 
 ```
 http://reddit-rss-cleaner:5000/r/netsec/new
