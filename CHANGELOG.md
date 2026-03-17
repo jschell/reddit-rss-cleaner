@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.1.5 (2026-03-17)
+
+### Bug Fixes
+
+- Formatting in README.md
+  ([`8b2a3d3`](https://github.com/jschell/reddit-rss-cleaner/commit/8b2a3d39e2ac5a2f2ea9a0b52f4fa307d529553c))
+
+
 ## v0.1.4 (2026-03-17)
 
 ### Bug Fixes
