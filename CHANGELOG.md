@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.1.3 (2026-03-17)
+
+### Bug Fixes
+
+- Remove [skip ci] from PSR commit so publish workflow triggers
+  ([`640f37e`](https://github.com/jschell/reddit-rss-cleaner/commit/640f37eff1cf6a3221286fab728dbbb2b9b19f8e))
+
+[skip ci] in the release commit message was suppressing all workflows on the tag push, including
+  publish.yml. Replaced with a job-level condition on release.yml to prevent re-triggering.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+
 ## v0.1.2 (2026-03-17)
 
 ### Bug Fixes
