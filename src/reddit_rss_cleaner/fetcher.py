@@ -24,7 +24,16 @@ async def fetch_reddit_rss(
     - Raises httpx.RequestError on network failures
     """
     url = f"https://www.reddit.com/r/{subreddit}/{sort}.rss"
-    headers = {"User-Agent": USER_AGENT}
+    headers = {
+        "User-Agent": USER_AGENT,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+    }
     async with httpx.AsyncClient(http2=False, headers=headers, follow_redirects=True) as client:
         response = await client.get(url, timeout=timeout)
         response.raise_for_status()
