@@ -59,7 +59,8 @@ def build_rss_feed(
                 f'<a href="{entry.comments_url}">💬 Comments ({subreddit})</a>'
                 f"</p>"
             )
-            content = prepend + entry.content_html
+            body = entry.fetched_content or entry.content_html
+            content = prepend + body
         else:
             content = entry.content_html
 

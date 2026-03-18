@@ -69,3 +69,34 @@ def test_external_entry_has_content_prepend() -> None:
 def test_self_post_has_no_content_prepend() -> None:
     xml = build_rss_feed("netsec", "new", [SELF_POST_ENTRY])
     assert "📄 Article" not in xml
+
+
+def test_fetched_content_used_instead_of_reddit_html() -> None:
+    entry = ParsedEntry(
+        title="Test Article",
+        entry_url="https://example.com/article",
+        comments_url="https://www.reddit.com/r/netsec/comments/abc123/test/",
+        author="/u/testuser",
+        published_iso="2024-01-01T12:00:00Z",
+        content_html="<p>reddit snippet</p>",
+        is_self_post=False,
+        fetched_content="<p>full fetched article body</p>",
+    )
+    xml = build_rss_feed("netsec", "new", [entry])
+    assert "full fetched article body" in xml
+    assert "reddit snippet" not in xml
+
+
+def test_reddit_html_used_when_fetched_content_empty() -> None:
+    entry = ParsedEntry(
+        title="Test Article",
+        entry_url="https://example.com/article",
+        comments_url="https://www.reddit.com/r/netsec/comments/abc123/test/",
+        author="/u/testuser",
+        published_iso="2024-01-01T12:00:00Z",
+        content_html="<p>reddit snippet</p>",
+        is_self_post=False,
+        fetched_content="",
+    )
+    xml = build_rss_feed("netsec", "new", [entry])
+    assert "reddit snippet" in xml

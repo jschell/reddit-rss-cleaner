@@ -60,3 +60,58 @@ async def test_health_endpoint(client: AsyncClient) -> None:
     response = await client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+async def test_content_fetch_enriches_external_entries(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("CONTENT_FETCH_ENABLED", "true")
+    fetched = "<p>full article body</p>"
+    mock_rss = patch(
+        "reddit_rss_cleaner.main.fetch_reddit_rss", new=AsyncMock(return_value=FIXTURE_RSS_XML)
+    )
+    mock_content = patch(
+        "reddit_rss_cleaner.main.fetch_article_content", new=AsyncMock(return_value=fetched)
+    )
+    with mock_rss, mock_content:
+        response = await client.get("/r/netsec/new")
+    assert response.status_code == 200
+    assert "full article body" in response.text
+
+
+async def test_content_fetch_skipped_when_env_not_set(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("CONTENT_FETCH_ENABLED", raising=False)
+    mock_rss = patch(
+        "reddit_rss_cleaner.main.fetch_reddit_rss", new=AsyncMock(return_value=FIXTURE_RSS_XML)
+    )
+    mock_content = patch(
+        "reddit_rss_cleaner.main.fetch_article_content",
+        new=AsyncMock(return_value="<p>fetched</p>"),
+    )
+    with mock_rss, mock_content as mock_fetch:
+        response = await client.get("/r/netsec/new")
+    assert response.status_code == 200
+    mock_fetch.assert_not_called()
+
+
+async def test_content_fetch_skips_self_posts(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("CONTENT_FETCH_ENABLED", "true")
+    fetch_calls: list[str] = []
+
+    async def mock_fetch(url: str, timeout: int = 10) -> str:
+        fetch_calls.append(url)
+        return "<p>fetched</p>"
+
+    mock_rss = patch(
+        "reddit_rss_cleaner.main.fetch_reddit_rss", new=AsyncMock(return_value=FIXTURE_RSS_XML)
+    )
+    mock_content = patch("reddit_rss_cleaner.main.fetch_article_content", side_effect=mock_fetch)
+    with mock_rss, mock_content:
+        await client.get("/r/netsec/new")
+
+    # fixture has one external post and one self-post; only external should be fetched
+    assert all("reddit.com" not in url for url in fetch_calls)

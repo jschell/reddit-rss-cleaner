@@ -6,5 +6,11 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 COPY src/ ./src/
 RUN uv sync --frozen --no-dev --no-editable
+# Install Chromium for Playwright only when PLAYWRIGHT_ENABLED=true is passed at build time.
+# Usage: docker build --build-arg PLAYWRIGHT_ENABLED=true .
+ARG PLAYWRIGHT_ENABLED=false
+RUN if [ "$PLAYWRIGHT_ENABLED" = "true" ]; then \
+      uv run playwright install chromium --with-deps; \
+    fi
 EXPOSE 5000
 CMD ["uv", "run", "--frozen", "reddit-rss-cleaner"]
