@@ -73,7 +73,7 @@ async def _fetch_headless(url: str, timeout: int) -> str:
         async with _semaphore:
             page = await _browser.new_page()
             try:
-                await page.goto(url, timeout=timeout * 1000, wait_until="networkidle")
+                await page.goto(url, timeout=timeout * 1000, wait_until="domcontentloaded")
                 html = await page.content()
             finally:
                 await page.close()
