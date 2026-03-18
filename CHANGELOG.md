@@ -1,6 +1,27 @@
 # CHANGELOG
 
 
+## v0.3.0 (2026-03-18)
+
+### Documentation
+
+- Document content fetching feature and new env vars
+  ([`dd1d1f6`](https://github.com/jschell/reddit-rss-cleaner/commit/dd1d1f645d691127f97ba213a74720c54c6b2642))
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+### Features
+
+- Publish latest-playwright Docker Hub tag with Chromium included
+  ([`97cb20e`](https://github.com/jschell/reddit-rss-cleaner/commit/97cb20e98fd7e1f26504663f5fa7affc021e330d))
+
+Adds a second build+push step to publish.yml that passes PLAYWRIGHT_ENABLED=true at build time and
+  pushes versioned -playwright tags (latest-playwright, x.y.z-playwright, etc.) alongside the
+  standard tags on every release.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+
 ## v0.2.0 (2026-03-18)
 
 ### Features
