@@ -98,9 +98,7 @@ async def subreddit_feed(subreddit: str, sort: str) -> Response:
             return ""
 
         tasks = [
-            fetch_article_content(e.entry_url, content_timeout)
-            if not e.is_self_post
-            else _noop()
+            fetch_article_content(e.entry_url, content_timeout) if not e.is_self_post else _noop()
             for e in entries
         ]
         try:
