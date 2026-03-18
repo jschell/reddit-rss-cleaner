@@ -70,3 +70,22 @@ def test_parse_feed_self_post_entry(fixture_rss: str) -> None:
     self_post = next(e for e in entries if e.is_self_post)
     assert "reddit.com" in self_post.entry_url
     assert self_post.entry_url == self_post.comments_url
+
+
+def test_parsed_entry_fetched_content_defaults_empty(fixture_rss: str) -> None:
+    entries = parse_feed(fixture_rss)
+    assert all(e.fetched_content == "" for e in entries)
+
+
+def test_parsed_entry_fetched_content_can_be_set() -> None:
+    entry = ParsedEntry(
+        title="Test",
+        entry_url="https://example.com",
+        comments_url="https://reddit.com/r/test/comments/abc/",
+        author="user",
+        published_iso="2024-01-01T00:00:00Z",
+        content_html="<p>reddit html</p>",
+        is_self_post=False,
+        fetched_content="<p>full article content</p>",
+    )
+    assert entry.fetched_content == "<p>full article content</p>"

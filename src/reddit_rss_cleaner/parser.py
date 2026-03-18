@@ -21,6 +21,7 @@ class ParsedEntry:
     published_iso: str  # ISO 8601 UTC string
     content_html: str  # original Reddit HTML content
     is_self_post: bool  # True if [link] points back to reddit.com
+    fetched_content: str = ""  # article content fetched from entry_url; empty if not fetched
 
 
 def extract_external_url(entry_html: str, fallback_url: str) -> tuple[str, bool]:

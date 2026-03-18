@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import dataclasses
 import logging
 import os
 
@@ -8,6 +10,7 @@ from fastapi import FastAPI, HTTPException, Response
 
 from reddit_rss_cleaner.builder import build_rss_feed
 from reddit_rss_cleaner.cache import TTLCache
+from reddit_rss_cleaner.content_fetcher import fetch_article_content
 from reddit_rss_cleaner.fetcher import fetch_reddit_rss
 from reddit_rss_cleaner.parser import parse_feed
 
@@ -71,6 +74,24 @@ async def subreddit_feed(subreddit: str, sort: str) -> Response:
     entries = parse_feed(raw_rss)
     if not entries:
         raise HTTPException(status_code=404, detail=f"No entries found in r/{subreddit}/{sort}")
+
+    if os.environ.get("CONTENT_FETCH_ENABLED") == "true":
+        content_timeout = int(os.environ.get("CONTENT_TIMEOUT", "10"))
+
+        async def _noop() -> str:
+            return ""
+
+        fetched = await asyncio.gather(
+            *[
+                fetch_article_content(e.entry_url, content_timeout)
+                if not e.is_self_post
+                else _noop()
+                for e in entries
+            ]
+        )
+        entries = [
+            dataclasses.replace(e, fetched_content=c) for e, c in zip(entries, fetched, strict=True)
+        ]
 
     feed_xml = build_rss_feed(subreddit, sort, entries)
     _cache.set(cache_key, feed_xml)
