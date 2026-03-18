@@ -49,3 +49,26 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Extract metadata (playwright)
+        id: meta-playwright
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/reddit-rss-cleaner
+          tags: |
+            type=semver,pattern={{version}}-playwright
+            type=semver,pattern={{major}}.{{minor}}-playwright
+            type=semver,pattern={{major}}-playwright
+            type=raw,value=latest-playwright
+
+      - name: Build and push (playwright)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta-playwright.outputs.tags }}
+          labels: ${{ steps.meta-playwright.outputs.labels }}
+          build-args: PLAYWRIGHT_ENABLED=true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

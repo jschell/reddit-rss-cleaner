@@ -9,7 +9,8 @@ Reddit's RSS feeds set `<link>` to the comments page for every entry — even wh
 1. Fetches the raw Reddit Atom feed
 2. Parses the `[link]` anchor from each entry's HTML content to extract the external article URL
 3. Rebuilds a clean RSS 2.0 feed with corrected `<link>` URLs and a prepended *Article / Comments* navigation header
-4. Self-posts (where `[link]` points back to Reddit) are detected and left as-is 
+4. Self-posts (where `[link]` points back to Reddit) are detected and left as-is
+5. Optionally fetches the full article body from the external URL and embeds it directly in the feed entry (opt-in — see [Content fetching](#content-fetching))
 
 ## API
 
@@ -31,6 +32,49 @@ All configuration is via environment variables.
 | `CACHE_TTL` | `300` | Feed cache lifetime in seconds |
 | `REQUEST_TIMEOUT` | `15` | Reddit fetch timeout in seconds |
 | `LOG_LEVEL` | `info` | Uvicorn log level (`debug`, `info`, `warning`, `error`) |
+| `CONTENT_FETCH_ENABLED` | *(unset)* | Set to `true` to fetch full article content and embed it in each feed entry |
+| `CONTENT_TIMEOUT` | `10` | Per-article fetch timeout in seconds (used when `CONTENT_FETCH_ENABLED=true`) |
+| `PLAYWRIGHT_ENABLED` | *(unset)* | Set to `true` to enable headless Chromium fallback for JavaScript-rendered pages |
+
+## Content fetching
+
+When `CONTENT_FETCH_ENABLED=true` the service fetches each external article URL and embeds the extracted body text directly in the RSS `<description>`. This lets your feed reader display the full article without opening a browser.
+
+**Strategy (in order):**
+
+1. **trafilatura** (plain HTTP) — fast, zero overhead, works for most static sites.
+2. **Playwright headless Chromium** (optional fallback) — used when the static fetch returns too little content and `PLAYWRIGHT_ENABLED=true`. Handles JavaScript-rendered pages (SPAs, paywalled previews, etc.).
+
+Self-posts are never fetched — their content is already inline in the Reddit feed.
+
+### Enabling Playwright
+
+A pre-built image with Chromium included is published to Docker Hub alongside the standard image:
+
+| Tag | Chromium | Size |
+|---|---|---|
+| `latest` | No | small |
+| `latest-playwright` | Yes | ~+600 MB |
+
+Versioned tags follow the same pattern: `0.2.0-playwright`, `0.2-playwright`, `0.2-playwright`.
+
+Use the playwright image in your stack:
+
+```yaml
+  reddit-rss-cleaner:
+    image: jschell/reddit-rss-cleaner:latest-playwright
+    environment:
+      CONTENT_FETCH_ENABLED: "true"
+      PLAYWRIGHT_ENABLED: "true"
+```
+
+To build the playwright image yourself instead:
+
+```bash
+docker build --build-arg PLAYWRIGHT_ENABLED=true -t reddit-rss-cleaner .
+```
+
+Without Chromium installed (i.e. using the standard image), setting `PLAYWRIGHT_ENABLED=true` at runtime has no effect.
 
 ## Running with Docker
 
