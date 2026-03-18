@@ -1,6 +1,28 @@
 # CHANGELOG
 
 
+## v0.3.1 (2026-03-18)
+
+### Bug Fixes
+
+- Resolve ruff lint errors (import sort, UP035, E501, F401)
+  ([`3f40e2f`](https://github.com/jschell/reddit-rss-cleaner/commit/3f40e2f1b8bd961280c04c10deb682bcfddc0814))
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+- Reuse shared Playwright browser to prevent Miniflux timeout
+  ([`c6a2bb2`](https://github.com/jschell/reddit-rss-cleaner/commit/c6a2bb2e5a68f2ceccdc17168df902bd23df6ab3))
+
+Previously each article launched its own Chromium process inside _fetch_headless, meaning a 25-entry
+  feed could spin up 25 concurrent browsers and easily exceed Miniflux's HTTP client timeout.
+
+Now a single browser is launched once at startup via the FastAPI lifespan (init_playwright /
+  close_playwright) and shared across all requests. A semaphore (default 4, tunable via
+  PLAYWRIGHT_CONCURRENCY) caps the number of concurrent pages so the container isn't overwhelmed.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+
 ## v0.3.0 (2026-03-18)
 
 ### Documentation
