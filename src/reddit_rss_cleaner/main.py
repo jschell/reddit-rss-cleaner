@@ -97,7 +97,7 @@ async def subreddit_feed(subreddit: str, sort: str) -> Response:
         async def _noop() -> str:
             return ""
 
-        loop_tasks = [
+        loop_tasks: list[asyncio.Task[str]] = [
             asyncio.ensure_future(
                 fetch_article_content(e.entry_url, content_timeout)
                 if not e.is_self_post
@@ -116,7 +116,7 @@ async def subreddit_feed(subreddit: str, sort: str) -> Response:
             for t in pending:
                 t.cancel()
             await asyncio.gather(*pending, return_exceptions=True)
-        fetched = []
+        fetched: list[str] = []
         for t in loop_tasks:
             try:
                 fetched.append(t.result() if t in done else "")
