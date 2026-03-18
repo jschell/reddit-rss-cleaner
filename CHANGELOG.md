@@ -1,6 +1,24 @@
 # CHANGELOG
 
 
+## v0.2.0 (2026-03-18)
+
+### Features
+
+- Add article content fetching with trafilatura and optional Playwright fallback
+  ([`24d8699`](https://github.com/jschell/reddit-rss-cleaner/commit/24d8699e51fbf864faa6dd8964c6d6ff21c8f5b0))
+
+- New content_fetcher module: fetches external article HTML using trafilatura (static HTTP); falls
+  back to headless Chromium via Playwright when content is too short and PLAYWRIGHT_ENABLED=true -
+  ParsedEntry gains fetched_content field (default empty string) - builder prefers fetched_content
+  over Reddit-provided HTML for external posts - main orchestrates concurrent content fetching when
+  CONTENT_FETCH_ENABLED=true; self-posts are skipped - Dockerfile: optional Playwright + Chromium
+  install via --build-arg PLAYWRIGHT_ENABLED=true - Full TDD: red/green cycle for content_fetcher,
+  parser, builder, and routes
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+
 ## v0.1.5 (2026-03-17)
 
 ### Bug Fixes
