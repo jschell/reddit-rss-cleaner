@@ -1,6 +1,33 @@
 # CHANGELOG
 
 
+## v0.3.2 (2026-03-18)
+
+### Bug Fixes
+
+- Prevent Miniflux timeout by unblocking event loop and bounding content-fetch time
+  ([`f7835b6`](https://github.com/jschell/reddit-rss-cleaner/commit/f7835b67e2eda9b68516b2a1b970753c60bba014))
+
+Two root causes for the timeout:
+
+1. trafilatura.fetch_url is synchronous — calling it directly in an async context blocked the event
+  loop, forcing all 25 article fetches to run serially instead of concurrently. Fixed by wrapping in
+  run_in_executor.
+
+2. No overall time budget — with many entries the total content-fetch phase could far exceed
+  Miniflux's HTTP client timeout. Added CONTENT_FETCH_BUDGET (default 20 s) via asyncio.wait_for; on
+  expiry the feed is returned without article content rather than hanging.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+### Code Style
+
+- Apply ruff format to main.py
+  ([`f4ce024`](https://github.com/jschell/reddit-rss-cleaner/commit/f4ce0245d6e0b7085a1e8807d8246f6d3a4ef573))
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+
 ## v0.3.1 (2026-03-18)
 
 ### Bug Fixes
