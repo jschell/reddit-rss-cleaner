@@ -3,8 +3,6 @@ from __future__ import annotations
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
 from reddit_rss_cleaner.content_fetcher import (
     _fetch_headless,  # pyright: ignore[reportPrivateUsage]
     fetch_article_content,

@@ -4,15 +4,19 @@ import asyncio
 import dataclasses
 import logging
 import os
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
 
 import httpx
 from fastapi import FastAPI, HTTPException, Response
 
 from reddit_rss_cleaner.builder import build_rss_feed
 from reddit_rss_cleaner.cache import TTLCache
-from reddit_rss_cleaner.content_fetcher import close_playwright, fetch_article_content, init_playwright
+from reddit_rss_cleaner.content_fetcher import (
+    close_playwright,
+    fetch_article_content,
+    init_playwright,
+)
 from reddit_rss_cleaner.fetcher import fetch_reddit_rss
 from reddit_rss_cleaner.parser import parse_feed
 
