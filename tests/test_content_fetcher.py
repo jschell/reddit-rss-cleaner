@@ -134,3 +134,18 @@ class TestFetchHeadless:
             result = await _fetch_headless("https://example.com/article", timeout=10)
 
         assert result == ""
+
+    async def test_goto_uses_domcontentloaded(self) -> None:
+        """Regression: wait_until must be domcontentloaded, not networkidle."""
+        mock_browser = _make_mock_browser()
+
+        with (
+            patch("reddit_rss_cleaner.content_fetcher._browser", mock_browser),
+            patch("reddit_rss_cleaner.content_fetcher._semaphore", asyncio.Semaphore(4)),
+            patch(EXTRACT, return_value="content"),
+        ):
+            await _fetch_headless("https://example.com/article", timeout=10)
+
+        mock_page = mock_browser.new_page.return_value
+        _, kwargs = mock_page.goto.call_args
+        assert kwargs.get("wait_until") == "domcontentloaded"

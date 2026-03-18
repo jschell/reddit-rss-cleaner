@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, patch
 
@@ -135,3 +136,33 @@ async def test_content_fetch_budget_timeout_returns_feed_without_content(
 
     assert response.status_code == 200
     assert "application/rss+xml" in response.headers["content-type"]
+
+
+async def test_content_fetch_budget_timeout_with_hanging_tasks(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regression: hanging fetches must be cancelled and awaited so no orphaned futures escape."""
+    monkeypatch.setenv("CONTENT_FETCH_ENABLED", "true")
+    monkeypatch.setenv("CONTENT_FETCH_BUDGET", "1")
+
+    cancelled: list[bool] = []
+
+    async def hanging_fetch(url: str, timeout: int = 10) -> str:
+        try:
+            await asyncio.sleep(60)
+        except asyncio.CancelledError:
+            cancelled.append(True)
+            raise
+        return ""
+
+    mock_rss = patch(
+        "reddit_rss_cleaner.main.fetch_reddit_rss", new=AsyncMock(return_value=FIXTURE_RSS_XML)
+    )
+    mock_content = patch("reddit_rss_cleaner.main.fetch_article_content", side_effect=hanging_fetch)
+    with mock_rss, mock_content:
+        response = await client.get("/r/netsec/new")
+
+    assert response.status_code == 200
+    assert "application/rss+xml" in response.headers["content-type"]
+    # Pending tasks must have been cancelled (not left as orphaned futures)
+    assert cancelled, "hanging tasks were not cancelled before returning"
