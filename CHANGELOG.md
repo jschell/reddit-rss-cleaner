@@ -1,6 +1,55 @@
 # CHANGELOG
 
 
+## v0.3.3 (2026-03-18)
+
+### Bug Fixes
+
+- Prevent orphaned Playwright futures and reduce fetch timeouts
+  ([`a6268a3`](https://github.com/jschell/reddit-rss-cleaner/commit/a6268a306734e3215ce73d0504cf90014d36a5cd))
+
+- Change wait_until="networkidle" to "domcontentloaded" in _fetch_headless; many sites (Medium,
+  government sites) never reach networkidle, causing unnecessary 10s timeouts on every Playwright
+  fetch.
+
+- Replace asyncio.wait_for(gather(...)) with asyncio.wait() + explicit cancel/await of pending tasks
+  when the content budget expires. The old approach force-cancelled coroutines mid-flight, leaving
+  Playwright's internal futures orphaned and logging spurious "Future exception was never retrieved"
+  / TargetClosedError warnings.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+- **types**: Annotate loop_tasks and fetched to resolve pyright errors
+  ([`1f865a5`](https://github.com/jschell/reddit-rss-cleaner/commit/1f865a586d5ec9c69db86873544757df196d98ca))
+
+Pyright couldn't infer the element type of the list comprehension passed to asyncio.wait, causing
+  reportUnknownMemberType/reportUnknownVariableType errors on lines 122-126. Explicit annotations:
+
+loop_tasks: list[asyncio.Task[str]]
+
+fetched: list[str]
+
+give pyright enough information to verify t.result() and the zip call.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+### Testing
+
+- Add coverage for domcontentloaded and budget-timeout cancellation
+  ([`3955d62`](https://github.com/jschell/reddit-rss-cleaner/commit/3955d62d7cd0439b0d4a7b3c6cd73c328522ed89))
+
+- test_goto_uses_domcontentloaded: asserts page.goto is called with wait_until="domcontentloaded";
+  would catch a regression back to networkidle.
+
+- test_content_fetch_budget_timeout_with_hanging_tasks: uses a genuinely hanging coroutine
+  (asyncio.sleep(60)) to exercise the asyncio.wait + cancel/await path, and asserts CancelledError
+  was received by pending tasks — proving no orphaned futures escape the budget timeout.
+
+Also adds CLAUDE.md requiring test coverage for all code changes.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+
 ## v0.3.2 (2026-03-18)
 
 ### Bug Fixes
