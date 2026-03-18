@@ -4,22 +4,33 @@ import asyncio
 import dataclasses
 import logging
 import os
+from contextlib import asynccontextmanager
+from typing import AsyncIterator
 
 import httpx
 from fastapi import FastAPI, HTTPException, Response
 
 from reddit_rss_cleaner.builder import build_rss_feed
 from reddit_rss_cleaner.cache import TTLCache
-from reddit_rss_cleaner.content_fetcher import fetch_article_content
+from reddit_rss_cleaner.content_fetcher import close_playwright, fetch_article_content, init_playwright
 from reddit_rss_cleaner.fetcher import fetch_reddit_rss
 from reddit_rss_cleaner.parser import parse_feed
 
 logger = logging.getLogger(__name__)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    await init_playwright()
+    yield
+    await close_playwright()
+
+
 app = FastAPI(
     title="Reddit RSS Cleaner",
     description="Rewrites Reddit RSS feeds to use external article URLs.",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 VALID_SORTS = frozenset({"new", "hot", "top", "rising"})
