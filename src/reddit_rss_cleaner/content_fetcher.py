@@ -41,13 +41,14 @@ async def fetch_article_content(url: str, timeout: int = 10) -> str:
     """
     Fetch and extract article content from a URL.
 
-    1. Try trafilatura (plain HTTP) — fast, no overhead.
-    2. If content is below MIN_CONTENT_LENGTH and PLAYWRIGHT_ENABLED=true,
-       fall back to headless Chromium rendering using the shared browser.
+    1. Try trafilatura (plain HTTP, run in thread pool) — fast, no overhead.
+    2. If content is below MIN_CONTENT_LENGTH and a shared Playwright browser
+       is available, fall back to headless Chromium rendering.
 
     Returns extracted HTML string, or empty string on failure.
     """
-    content = _fetch_static(url)
+    loop = asyncio.get_running_loop()
+    content = await loop.run_in_executor(None, _fetch_static, url)
     if content and len(content) >= MIN_CONTENT_LENGTH:
         return content
     if _browser is not None:

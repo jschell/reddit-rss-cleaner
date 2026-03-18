@@ -115,3 +115,23 @@ async def test_content_fetch_skips_self_posts(
 
     # fixture has one external post and one self-post; only external should be fetched
     assert all("reddit.com" not in url for url in fetch_calls)
+
+
+async def test_content_fetch_budget_timeout_returns_feed_without_content(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("CONTENT_FETCH_ENABLED", "true")
+    monkeypatch.setenv("CONTENT_FETCH_BUDGET", "1")
+
+    async def slow_fetch(url: str, timeout: int = 10) -> str:
+        raise TimeoutError
+
+    mock_rss = patch(
+        "reddit_rss_cleaner.main.fetch_reddit_rss", new=AsyncMock(return_value=FIXTURE_RSS_XML)
+    )
+    mock_content = patch("reddit_rss_cleaner.main.fetch_article_content", side_effect=slow_fetch)
+    with mock_rss, mock_content:
+        response = await client.get("/r/netsec/new")
+
+    assert response.status_code == 200
+    assert "application/rss+xml" in response.headers["content-type"]

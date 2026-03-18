@@ -92,18 +92,27 @@ async def subreddit_feed(subreddit: str, sort: str) -> Response:
 
     if os.environ.get("CONTENT_FETCH_ENABLED") == "true":
         content_timeout = int(os.environ.get("CONTENT_TIMEOUT", "10"))
+        content_budget = int(os.environ.get("CONTENT_FETCH_BUDGET", "20"))
 
         async def _noop() -> str:
             return ""
 
-        fetched = await asyncio.gather(
-            *[
-                fetch_article_content(e.entry_url, content_timeout)
-                if not e.is_self_post
-                else _noop()
-                for e in entries
-            ]
-        )
+        tasks = [
+            fetch_article_content(e.entry_url, content_timeout)
+            if not e.is_self_post
+            else _noop()
+            for e in entries
+        ]
+        try:
+            fetched = await asyncio.wait_for(asyncio.gather(*tasks), timeout=content_budget)
+        except TimeoutError:
+            logger.warning(
+                "Content fetching exceeded %ds budget for r/%s/%s; returning feed without content",
+                content_budget,
+                subreddit,
+                sort,
+            )
+            fetched = [""] * len(entries)
         entries = [
             dataclasses.replace(e, fetched_content=c) for e, c in zip(entries, fetched, strict=True)
         ]
