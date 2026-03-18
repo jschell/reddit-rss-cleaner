@@ -49,17 +49,32 @@ Self-posts are never fetched — their content is already inline in the Reddit f
 
 ### Enabling Playwright
 
-Playwright requires Chromium to be installed in the container. Pass `--build-arg PLAYWRIGHT_ENABLED=true` at image build time:
+A pre-built image with Chromium included is published to Docker Hub alongside the standard image:
+
+| Tag | Chromium | Size |
+|---|---|---|
+| `latest` | No | small |
+| `latest-playwright` | Yes | ~+600 MB |
+
+Versioned tags follow the same pattern: `0.2.0-playwright`, `0.2-playwright`, `0.2-playwright`.
+
+Use the playwright image in your stack:
+
+```yaml
+  reddit-rss-cleaner:
+    image: jschell/reddit-rss-cleaner:latest-playwright
+    environment:
+      CONTENT_FETCH_ENABLED: "true"
+      PLAYWRIGHT_ENABLED: "true"
+```
+
+To build the playwright image yourself instead:
 
 ```bash
 docker build --build-arg PLAYWRIGHT_ENABLED=true -t reddit-rss-cleaner .
-docker run -d -p 5000:5000 \
-  -e CONTENT_FETCH_ENABLED=true \
-  -e PLAYWRIGHT_ENABLED=true \
-  reddit-rss-cleaner
 ```
 
-Without the build arg, `PLAYWRIGHT_ENABLED=true` at runtime has no effect (the browser binary is absent).
+Without Chromium installed (i.e. using the standard image), setting `PLAYWRIGHT_ENABLED=true` at runtime has no effect.
 
 ## Running with Docker
 
