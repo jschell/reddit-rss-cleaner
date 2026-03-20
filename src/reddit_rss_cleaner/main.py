@@ -40,7 +40,16 @@ app = FastAPI(
 
 VALID_SORTS = frozenset({"new", "hot", "top", "rising"})
 
-_cache: TTLCache = TTLCache(ttl_seconds=int(os.environ.get("CACHE_TTL", "300")))
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(os.environ.get(name, str(default)))
+    except ValueError:
+        logger.warning("Invalid %s value; defaulting to %d", name, default)
+        return default
+
+
+_cache: TTLCache = TTLCache(ttl_seconds=_env_int("CACHE_TTL", 300))
 
 
 def clear_cache() -> None:
@@ -63,7 +72,7 @@ async def subreddit_feed(subreddit: str, sort: str) -> Response:
         return Response(content=cached, media_type="application/rss+xml")
 
     try:
-        timeout = int(os.environ.get("REQUEST_TIMEOUT", "15"))
+        timeout = _env_int("REQUEST_TIMEOUT", 15)
         raw_rss = await fetch_reddit_rss(subreddit, sort, timeout=timeout)
     except httpx.HTTPStatusError as exc:
         status = exc.response.status_code
@@ -92,8 +101,8 @@ async def subreddit_feed(subreddit: str, sort: str) -> Response:
         raise HTTPException(status_code=404, detail=f"No entries found in r/{subreddit}/{sort}")
 
     if os.environ.get("CONTENT_FETCH_ENABLED") == "true":
-        content_timeout = int(os.environ.get("CONTENT_TIMEOUT", "10"))
-        content_budget = int(os.environ.get("CONTENT_FETCH_BUDGET", "20"))
+        content_timeout = _env_int("CONTENT_TIMEOUT", 10)
+        content_budget = _env_int("CONTENT_FETCH_BUDGET", 20)
 
         loop_tasks: list[asyncio.Task[str]] = [
             asyncio.create_task(
@@ -152,6 +161,6 @@ def run() -> None:
     """Entry point for `reddit-rss-cleaner` CLI script."""
     import uvicorn
 
-    port = int(os.environ.get("PORT", "5000"))
+    port = _env_int("PORT", 5000)
     log_level = os.environ.get("LOG_LEVEL", "info")
     uvicorn.run("reddit_rss_cleaner.main:app", host="0.0.0.0", port=port, log_level=log_level)

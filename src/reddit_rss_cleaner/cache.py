@@ -25,6 +25,15 @@ class TTLCache:
         with self._lock:
             self._store[key] = (value, time.monotonic() + self._ttl)
 
+    def prune(self) -> int:
+        """Remove all expired entries. Returns the number of entries removed."""
+        now = time.monotonic()
+        with self._lock:
+            expired = [k for k, (_, exp) in self._store.items() if now > exp]
+            for k in expired:
+                del self._store[k]
+        return len(expired)
+
     def clear(self) -> None:
         with self._lock:
             self._store.clear()

@@ -62,3 +62,30 @@ class TestTTLCacheClear:
     def test_clear_on_empty_cache_is_noop(self) -> None:
         cache = TTLCache(ttl_seconds=60)
         cache.clear()  # should not raise
+
+
+class TestTTLCachePrune:
+    def test_prune_removes_expired_entries(self) -> None:
+        cache = TTLCache(ttl_seconds=60)
+        cache.set("a", "1")
+        cache.set("b", "2")
+        # Backdate both entries so they are expired
+        with cache._lock:  # pyright: ignore[reportPrivateUsage]
+            for k in list(cache._store):  # pyright: ignore[reportPrivateUsage]
+                v, _ = cache._store[k]  # pyright: ignore[reportPrivateUsage]
+                cache._store[k] = (v, time.monotonic() - 1)  # pyright: ignore[reportPrivateUsage]
+        removed = cache.prune()
+        assert removed == 2
+        with cache._lock:  # pyright: ignore[reportPrivateUsage]
+            assert len(cache._store) == 0  # pyright: ignore[reportPrivateUsage]
+
+    def test_prune_leaves_live_entries(self) -> None:
+        cache = TTLCache(ttl_seconds=60)
+        cache.set("live", "v")
+        removed = cache.prune()
+        assert removed == 0
+        assert cache.get("live") == "v"
+
+    def test_prune_returns_zero_on_empty_cache(self) -> None:
+        cache = TTLCache(ttl_seconds=60)
+        assert cache.prune() == 0

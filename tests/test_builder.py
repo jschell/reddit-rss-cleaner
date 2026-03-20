@@ -100,3 +100,33 @@ def test_reddit_html_used_when_fetched_content_empty() -> None:
     )
     xml = build_rss_feed("netsec", "new", [entry])
     assert "reddit snippet" in xml
+
+
+def test_invalid_published_iso_is_skipped_without_raising() -> None:
+    """build_rss_feed must not raise when published_iso can't be parsed."""
+    entry = ParsedEntry(
+        title="Test Article",
+        entry_url="https://example.com/article",
+        comments_url="https://www.reddit.com/r/netsec/comments/abc123/test/",
+        author="/u/testuser",
+        published_iso="not-a-date",
+        content_html="<p>content</p>",
+        is_self_post=False,
+    )
+    xml = build_rss_feed("netsec", "new", [entry])
+    # Feed is still generated; the broken date is silently omitted
+    assert "Test Article" in xml
+
+
+def test_empty_published_iso_is_skipped_without_raising() -> None:
+    entry = ParsedEntry(
+        title="No Date Article",
+        entry_url="https://example.com/article",
+        comments_url="https://www.reddit.com/r/netsec/comments/abc123/test/",
+        author="/u/testuser",
+        published_iso="",
+        content_html="<p>content</p>",
+        is_self_post=False,
+    )
+    xml = build_rss_feed("netsec", "new", [entry])
+    assert "No Date Article" in xml
