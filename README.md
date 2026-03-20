@@ -132,10 +132,11 @@ services:
       PLAYWRIGHT_ENABLED: "true"
       PLAYWRIGHT_CONCURRENCY: "4"  # max simultaneous Playwright pages
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 15s  # allow time for Playwright browser to initialise
     networks:
       - internal
     # Do NOT expose a host port — Miniflux reaches it via the internal network
