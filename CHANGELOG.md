@@ -1,6 +1,79 @@
 # CHANGELOG
 
 
+## v0.3.5 (2026-03-20)
+
+### Bug Fixes
+
+- Playwright version bound, FastAPI version, ensure_future, test coverage
+  ([`c33aefd`](https://github.com/jschell/reddit-rss-cleaner/commit/c33aefd13beaa324e0b0cd49d61e43b387ebf683))
+
+- Bump playwright optional-dep and dev-group bounds to >=1.49.0; versions below 1.49 do not support
+  --only-shell, breaking the Playwright-enabled Docker build - Read FastAPI app version from
+  importlib.metadata instead of the hardcoded "0.1.0" string so /openapi.json always reflects
+  pyproject.toml - Replace deprecated asyncio.ensure_future() with asyncio.create_task(); also
+  removes the per-request _noop() closure, using asyncio.sleep(0) as a zero-cost resolved coroutine
+  for self-posts - Add respx to dev dependencies for httpx request mocking - Add
+  tests/test_cache.py: unit tests for TTLCache get/set/clear/expiry - Add tests/test_fetcher.py:
+  unit tests for fetch_reddit_rss covering HTTP/1.1 enforcement, user-agent header, correct URL
+  construction, and error propagation for 403/404/429 and network failures
+
+60 tests passing.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+### Build System
+
+- Replace playwright --with-deps with explicit chromium runtime deps
+  ([`1a4f863`](https://github.com/jschell/reddit-rss-cleaner/commit/1a4f863c5895874a300730cb389623f04eb64589))
+
+The --with-deps flag installs two groups of packages on Debian bookworm: - chromium (21 runtime
+  libs) — needed - tools (xvfb + 8 font packages) — not needed for headless scraping
+
+The tools block adds ~86 MB uncompressed and serves no purpose in a container that only ever runs
+  Chromium in headless/domcontentloaded mode: - xvfb: X virtual framebuffer — headless Chrome
+  doesn't need a display server - fonts-noto-color-emoji, fonts-unifont, fonts-ipafont-gothic,
+  fonts-wqy-zenhei, fonts-tlwg-loma-otf, fonts-freefont-ttf, xfonts-scalable — broad CJK/emoji font
+  stacks for interactive browsing
+
+Replace with exactly the 21 chromium runtime packages from Playwright 1.58.0's nativeDeps manifest
+  for debian12 (bookworm), plus fonts-liberation for minimum text rendering. Standard image is
+  unchanged.
+
+Expected reduction: latest-playwright ~1.8 GB → ~1.75 GB.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+### Documentation
+
+- Broaden Playwright image size estimate to 500-700 MB range
+  ([`da52ed7`](https://github.com/jschell/reddit-rss-cleaner/commit/da52ed74499f55738839a234b9ed21a456513587))
+
+The +600 MB figure was a single-point estimate. Chromium is ~281 MB on disk and --with-deps pulls in
+  200-400 MB of X11/graphics system libraries on a slim Debian base, putting actual overhead
+  anywhere in the 500-700 MB range depending on Playwright version and base image.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+- Update Playwright image size to measured 1.8 GB
+  ([`9f05b5f`](https://github.com/jschell/reddit-rss-cleaner/commit/9f05b5fbc8043c8265dfc03baf99c353c792724f))
+
+Replaces the earlier estimate (+500-700 MB overhead) with the actual measured size of the published
+  latest-playwright image.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+- Update standard image size to measured 260 MB
+  ([`c729d71`](https://github.com/jschell/reddit-rss-cleaner/commit/c729d7135b70ab2bf0c9123cb9d3c5bb0bd10957))
+
+Both image sizes are now based on actual published arm64 images: - latest: ~260 MB (was ~200 MB
+  estimate) - latest-playwright: ~1.8 GB (unchanged)
+
+Real Playwright overhead is ~1.5 GB, not the ~600 MB originally stated.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+
 ## v0.3.4 (2026-03-20)
 
 ### Bug Fixes
