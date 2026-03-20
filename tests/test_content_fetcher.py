@@ -199,11 +199,11 @@ class TestFetchHeadless:
         the load state and retry once."""
         mock_browser = _make_mock_browser()
         page = mock_browser.new_page.return_value
+        nav_error = Exception(
+            "Page.content: Unable to retrieve content because the page is navigating"
+        )
         page.content = AsyncMock(
-            side_effect=[
-                Exception("Page.content: Unable to retrieve content because the page is navigating"),
-                "<html><body><p>Article body</p></body></html>",
-            ]
+            side_effect=[nav_error, "<html><body><p>Article body</p></body></html>"]
         )
 
         with (
