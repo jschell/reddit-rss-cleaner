@@ -25,6 +25,7 @@ def _is_binary_url(url: str) -> bool:
     path = urlparse(url).path.lower()
     return any(path.endswith(ext) for ext in _BINARY_EXTENSIONS)
 
+
 # Shared browser instance and semaphore — initialised by init_playwright() at startup.
 _browser: Browser | None = None
 _semaphore: asyncio.Semaphore | None = None
