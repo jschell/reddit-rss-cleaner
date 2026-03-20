@@ -42,13 +42,21 @@ async def fetch_article_content(url: str, timeout: int = 10) -> str:
     Fetch and extract article content from a URL.
 
     1. Try trafilatura (plain HTTP, run in thread pool) — fast, no overhead.
+       Bounded by `timeout` seconds so a slow site can't eat the global budget.
     2. If content is below MIN_CONTENT_LENGTH and a shared Playwright browser
        is available, fall back to headless Chromium rendering.
 
     Returns extracted HTML string, or empty string on failure.
     """
     loop = asyncio.get_running_loop()
-    content = await loop.run_in_executor(None, _fetch_static, url)
+    try:
+        content = await asyncio.wait_for(
+            loop.run_in_executor(None, _fetch_static, url),
+            timeout=timeout,
+        )
+    except TimeoutError:
+        logger.debug("Static fetch timed out for %s", url)
+        content = ""
     if content and len(content) >= MIN_CONTENT_LENGTH:
         return content
     if _browser is not None:

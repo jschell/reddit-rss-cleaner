@@ -81,6 +81,24 @@ class TestFetchArticleContentStatic:
         mock_headless.assert_not_called()
         assert result == short_content
 
+    async def test_returns_empty_when_static_fetch_times_out(self) -> None:
+        async def slow_fetch() -> str:
+            await asyncio.sleep(10)
+            return "A" * 300
+
+        with (
+            patch("reddit_rss_cleaner.content_fetcher._browser", None),
+            patch(
+                "reddit_rss_cleaner.content_fetcher.asyncio.get_running_loop",
+            ) as mock_get_loop,
+        ):
+            mock_loop = MagicMock()
+            mock_loop.run_in_executor = MagicMock(return_value=slow_fetch())
+            mock_get_loop.return_value = mock_loop
+            result = await fetch_article_content("https://example.com/slow", timeout=1)
+
+        assert result == ""
+
     async def test_does_not_fall_back_when_static_content_long_enough(self) -> None:
         long_content = "A" * 300
 
