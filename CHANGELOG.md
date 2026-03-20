@@ -1,6 +1,51 @@
 # CHANGELOG
 
 
+## v0.3.6 (2026-03-20)
+
+### Bug Fixes
+
+- Apply ruff format to main.py
+  ([`d7fc724`](https://github.com/jschell/reddit-rss-cleaner/commit/d7fc72426aa7386f9710e138a6d9a21eaa386ea6))
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+- Assert guards, strip [link], redundant check, cache prune, env int safety, tests
+  ([`fec8d99`](https://github.com/jschell/reddit-rss-cleaner/commit/fec8d99255240f84ccf6cc8120829bcb4e4d8c39))
+
+Item 6 – content_fetcher.py: replace assert _browser/assert _semaphore with an explicit if/raise
+  RuntimeError so the guard works under python -O and communicates the contract clearly.
+
+Item 7 – parser.py: add .strip() to [link] text comparison so anchors whose text has surrounding
+  whitespace are correctly matched.
+
+Item 8 – parser.py: remove redundant leading truthiness check before isinstance(raw_content, list)
+  (the isinstance + len check is enough).
+
+Item 9 – cache.py: add TTLCache.prune() to evict all expired entries on demand; without it, entries
+  for rarely-accessed keys accumulate until clear() or restart.
+
+Item 10 – main.py + content_fetcher.py: all int(os.environ.get(...)) calls are now wrapped via
+  _env_int() helper (main.py) or try/except (content_fetcher.py) so a misconfigured env var logs a
+  warning and falls back to the default instead of crashing at startup.
+
+Item 11 – test_builder.py: add tests for invalid and empty published_iso to confirm build_rss_feed
+  does not raise.
+
+Item 12 – test_parser.py: add test confirming [link] anchor with surrounding whitespace is matched
+  after the .strip() fix.
+
+Item 13 – test_fetcher.py: add 500 and 503 tests to cover the generic HTTPStatusError path beyond
+  403/404/429.
+
+Item 14 – test_parser.py: add tests for entries missing content/summary, missing author, and an
+  entirely empty feed. Also add test_cache.py: TestTTLCachePrune covering prune().
+
+71 tests passing.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+
 ## v0.3.5 (2026-03-20)
 
 ### Bug Fixes
