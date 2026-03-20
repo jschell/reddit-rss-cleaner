@@ -3,9 +3,12 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+from typing import TYPE_CHECKING
 
 import trafilatura
-from playwright.async_api import Browser, async_playwright
+
+if TYPE_CHECKING:
+    from playwright.async_api import Browser
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +24,8 @@ async def init_playwright() -> None:
     global _browser, _semaphore
     if os.environ.get("PLAYWRIGHT_ENABLED") != "true":
         return
+    from playwright.async_api import async_playwright  # lazy import
+
     max_pages = int(os.environ.get("PLAYWRIGHT_CONCURRENCY", "4"))
     pw = await async_playwright().start()
     _browser = await pw.chromium.launch()

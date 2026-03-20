@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import asyncio
+import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from reddit_rss_cleaner.content_fetcher import (
     _fetch_headless,  # pyright: ignore[reportPrivateUsage]
+    close_playwright,
     fetch_article_content,
+    init_playwright,
 )
 
 FETCH_URL = "reddit_rss_cleaner.content_fetcher.trafilatura.fetch_url"
@@ -167,3 +170,72 @@ class TestFetchHeadless:
         mock_page = mock_browser.new_page.return_value
         _, kwargs = mock_page.goto.call_args
         assert kwargs.get("wait_until") == "domcontentloaded"
+
+
+class TestInitPlaywright:
+    async def test_returns_early_when_playwright_disabled(self) -> None:
+        """init_playwright must be a no-op when PLAYWRIGHT_ENABLED is not 'true'."""
+        with (
+            patch.dict("os.environ", {}, clear=True),
+            patch("reddit_rss_cleaner.content_fetcher._browser", None),
+        ):
+            await init_playwright()
+
+        import reddit_rss_cleaner.content_fetcher as cf
+
+        assert cf._browser is None  # pyright: ignore[reportPrivateUsage]
+
+    async def test_does_not_import_playwright_when_disabled(self) -> None:
+        """The playwright package must not be imported at module load time.
+        This verifies the lite build (without playwright installed) won't crash on import."""
+        # Simulate playwright being absent by temporarily hiding it from sys.modules
+        playwright_modules = {k: v for k, v in sys.modules.items() if k.startswith("playwright")}
+        for key in playwright_modules:
+            sys.modules.pop(key)
+        try:
+            with patch.dict("os.environ", {}, clear=True):
+                # Re-importing the module must not trigger a playwright import
+                import importlib
+
+                import reddit_rss_cleaner.content_fetcher as cf
+
+                importlib.reload(cf)
+            # No playwright module should have been loaded
+            assert not any(k.startswith("playwright") for k in sys.modules)
+        finally:
+            # Restore playwright modules so other tests are unaffected
+            sys.modules.update(playwright_modules)
+
+    async def test_launches_browser_when_playwright_enabled(self) -> None:
+        mock_browser = MagicMock()
+        mock_pw = MagicMock()
+        mock_pw.chromium.launch = AsyncMock(return_value=mock_browser)
+
+        # async_playwright() returns an object whose .start() is awaitable
+        mock_playwright_instance = MagicMock()
+        mock_playwright_instance.start = AsyncMock(return_value=mock_pw)
+        mock_async_playwright = MagicMock(return_value=mock_playwright_instance)
+
+        with (
+            patch.dict("os.environ", {"PLAYWRIGHT_ENABLED": "true", "PLAYWRIGHT_CONCURRENCY": "2"}),
+            patch("reddit_rss_cleaner.content_fetcher._browser", None),
+            patch("reddit_rss_cleaner.content_fetcher._semaphore", None),
+            patch("playwright.async_api.async_playwright", mock_async_playwright),
+        ):
+            await init_playwright()
+
+        mock_pw.chromium.launch.assert_awaited_once()
+
+    async def test_close_playwright_closes_browser(self) -> None:
+        mock_browser = MagicMock()
+        mock_browser.close = AsyncMock()
+
+        with patch("reddit_rss_cleaner.content_fetcher._browser", mock_browser):
+            await close_playwright()
+
+        mock_browser.close.assert_awaited_once()
+
+    async def test_close_playwright_is_noop_when_no_browser(self) -> None:
+        with patch("reddit_rss_cleaner.content_fetcher._browser", None):
+            # Should complete without error
+            await close_playwright()
