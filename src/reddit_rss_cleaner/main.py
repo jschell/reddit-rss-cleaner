@@ -40,6 +40,7 @@ app = FastAPI(
 
 VALID_SORTS = frozenset({"new", "hot", "top", "rising"})
 
+
 def _env_int(name: str, default: int) -> int:
     try:
         return int(os.environ.get(name, str(default)))
