@@ -134,7 +134,6 @@ services:
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
       interval: 30s
-      timeout: 5s
       retries: 3
       start_period: 15s  # allow time for Playwright browser to initialise
     networks:
