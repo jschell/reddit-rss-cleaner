@@ -55,10 +55,10 @@ A pre-built image with Chromium included is published to Docker Hub alongside th
 
 | Tag | Chromium | Size (amd64) | Size (arm64) |
 |---|---|---|---|
-| `latest` | No | ~300 MB | ~263 MB |
+| `latest`, `slim` | No | ~300 MB | ~263 MB |
 | `latest-playwright` | Yes | ~1.21 GB | ~901 MB |
 
-Versioned tags follow the same pattern: `0.2.0-playwright`, `0.2-playwright`, `0.2-playwright`.
+`latest` and `slim` refer to the same image. `slim` is an explicit alias you can use in compose files to make the intent clear. Versioned tags follow the same pattern: `0.2.0`, `0.2.0-playwright`, etc.
 
 Use the playwright image in your stack:
 
