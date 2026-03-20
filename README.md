@@ -33,8 +33,10 @@ All configuration is via environment variables.
 | `REQUEST_TIMEOUT` | `15` | Reddit fetch timeout in seconds |
 | `LOG_LEVEL` | `info` | Uvicorn log level (`debug`, `info`, `warning`, `error`) |
 | `CONTENT_FETCH_ENABLED` | *(unset)* | Set to `true` to fetch full article content and embed it in each feed entry |
-| `CONTENT_TIMEOUT` | `10` | Per-article fetch timeout in seconds (used when `CONTENT_FETCH_ENABLED=true`) |
+| `CONTENT_TIMEOUT` | `10` | Per-article fetch timeout in seconds — applies to both the trafilatura static fetch and Playwright page load |
+| `CONTENT_FETCH_BUDGET` | `20` | Total wall-clock budget in seconds for fetching all articles in a feed. Articles that don't complete within the budget are returned without content. Set this higher than `CONTENT_TIMEOUT` and lower than Miniflux's `CLIENT_TIMEOUT`. |
 | `PLAYWRIGHT_ENABLED` | *(unset)* | Set to `true` to enable headless Chromium fallback for JavaScript-rendered pages |
+| `PLAYWRIGHT_CONCURRENCY` | `4` | Maximum number of simultaneous Playwright browser pages (used when `PLAYWRIGHT_ENABLED=true`) |
 
 ## Content fetching
 
@@ -65,7 +67,10 @@ Use the playwright image in your stack:
     image: jschell/reddit-rss-cleaner:latest-playwright
     environment:
       CONTENT_FETCH_ENABLED: "true"
+      CONTENT_TIMEOUT: "15"
+      CONTENT_FETCH_BUDGET: "60"
       PLAYWRIGHT_ENABLED: "true"
+      PLAYWRIGHT_CONCURRENCY: "4"
 ```
 
 To build the playwright image yourself instead:
@@ -111,15 +116,21 @@ services:
       ADMIN_USERNAME: admin
       ADMIN_PASSWORD: changeme
       FETCHER_ALLOW_PRIVATE_NETWORKS: "1"  # required — cleaner is on a private Docker network
+      CLIENT_TIMEOUT: "70"                 # must exceed the cleaner's CONTENT_FETCH_BUDGET + overhead
     networks:
       - internal
 
   reddit-rss-cleaner:
-    image: jschell/reddit-rss-cleaner:latest
+    image: jschell/reddit-rss-cleaner:latest-playwright
     restart: unless-stopped
     environment:
       CACHE_TTL: "300"
       LOG_LEVEL: info
+      CONTENT_FETCH_ENABLED: "true"
+      CONTENT_TIMEOUT: "15"        # per-article timeout (static fetch + Playwright page load)
+      CONTENT_FETCH_BUDGET: "60"   # total budget for all articles in one feed request
+      PLAYWRIGHT_ENABLED: "true"
+      PLAYWRIGHT_CONCURRENCY: "4"  # max simultaneous Playwright pages
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
@@ -136,7 +147,7 @@ services:
       POSTGRES_PASSWORD: secret
       POSTGRES_DB: miniflux
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - /path/to/db:/var/lib/postgresql/data  # bind mount — no named volume needed
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "miniflux"]
       interval: 5s
@@ -146,9 +157,6 @@ services:
 
 networks:
   internal:
-
-volumes:
-  db_data:
 ```
 
 ### Adding feeds in Miniflux
