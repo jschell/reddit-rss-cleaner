@@ -6,6 +6,7 @@ import logging
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from importlib.metadata import version as _pkg_version
 
 import httpx
 from fastapi import FastAPI, HTTPException, Response
@@ -33,7 +34,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(
     title="Reddit RSS Cleaner",
     description="Rewrites Reddit RSS feeds to use external article URLs.",
-    version="0.1.0",
+    version=_pkg_version("reddit-rss-cleaner"),
     lifespan=lifespan,
 )
 
@@ -94,14 +95,11 @@ async def subreddit_feed(subreddit: str, sort: str) -> Response:
         content_timeout = int(os.environ.get("CONTENT_TIMEOUT", "10"))
         content_budget = int(os.environ.get("CONTENT_FETCH_BUDGET", "20"))
 
-        async def _noop() -> str:
-            return ""
-
         loop_tasks: list[asyncio.Task[str]] = [
-            asyncio.ensure_future(
+            asyncio.create_task(
                 fetch_article_content(e.entry_url, content_timeout)
                 if not e.is_self_post
-                else _noop()
+                else asyncio.sleep(0, result="")
             )
             for e in entries
         ]
