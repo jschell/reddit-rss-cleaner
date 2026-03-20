@@ -36,6 +36,10 @@ WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app/src /app/src
 
+# curl is needed by external healthcheck probes (e.g. compose/Portainer stacks).
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install Chromium for Playwright only when PLAYWRIGHT_ENABLED=true is passed at build time.
 # Usage: docker build --build-arg PLAYWRIGHT_ENABLED=true .
 #
@@ -78,4 +82,6 @@ RUN if [ "$PLAYWRIGHT_ENABLED" = "true" ]; then \
     fi
 
 EXPOSE 5000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"
 CMD ["/app/.venv/bin/reddit-rss-cleaner"]

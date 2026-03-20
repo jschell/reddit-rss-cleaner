@@ -4,6 +4,7 @@ import asyncio
 import logging
 import os
 from typing import TYPE_CHECKING
+from urllib.parse import urlparse
 
 import trafilatura
 
@@ -13,6 +14,17 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 MIN_CONTENT_LENGTH = 200
+
+# File extensions that trigger browser downloads rather than page renders.
+_BINARY_EXTENSIONS = frozenset(
+    {".pdf", ".zip", ".gz", ".tar", ".exe", ".dmg", ".docx", ".xlsx", ".pptx"}
+)
+
+
+def _is_binary_url(url: str) -> bool:
+    path = urlparse(url).path.lower()
+    return any(path.endswith(ext) for ext in _BINARY_EXTENSIONS)
+
 
 # Shared browser instance and semaphore — initialised by init_playwright() at startup.
 _browser: Browser | None = None
@@ -86,12 +98,20 @@ def _fetch_static(url: str) -> str:
 async def _fetch_headless(url: str, timeout: int) -> str:
     if _browser is None or _semaphore is None:
         raise RuntimeError("_fetch_headless called before init_playwright()")
+    if _is_binary_url(url):
+        return ""
     try:
         async with _semaphore:
             page = await _browser.new_page()
             try:
                 await page.goto(url, timeout=timeout * 1000, wait_until="domcontentloaded")
-                html = await page.content()
+                try:
+                    html = await page.content()
+                except Exception:
+                    # page.content() can fail if a redirect fires after domcontentloaded.
+                    # Wait for the load event and retry once.
+                    await page.wait_for_load_state("load", timeout=timeout * 1000)
+                    html = await page.content()
             finally:
                 await page.close()
         result: str | None = trafilatura.extract(html, output_format="html", include_comments=False)
