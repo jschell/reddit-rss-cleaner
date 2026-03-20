@@ -53,10 +53,10 @@ Self-posts are never fetched — their content is already inline in the Reddit f
 
 A pre-built image with Chromium included is published to Docker Hub alongside the standard image:
 
-| Tag | Chromium | Size |
-|---|---|---|
-| `latest` | No | ~260 MB |
-| `latest-playwright` | Yes | ~1.8 GB |
+| Tag | Chromium | Size (amd64) | Size (arm64) |
+|---|---|---|---|
+| `latest` | No | ~300 MB | ~263 MB |
+| `latest-playwright` | Yes | ~1.21 GB | ~901 MB |
 
 Versioned tags follow the same pattern: `0.2.0-playwright`, `0.2-playwright`, `0.2-playwright`.
 
