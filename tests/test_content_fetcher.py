@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from reddit_rss_cleaner.content_fetcher import (
     _fetch_headless,  # pyright: ignore[reportPrivateUsage]
+    _is_binary_url,  # pyright: ignore[reportPrivateUsage]
     close_playwright,
     fetch_article_content,
     init_playwright,
@@ -20,6 +21,7 @@ def _make_mock_browser() -> MagicMock:
     mock_page.goto = AsyncMock()
     mock_page.content = AsyncMock(return_value="<html/>")
     mock_page.close = AsyncMock()
+    mock_page.wait_for_load_state = AsyncMock()
 
     mock_browser = MagicMock()
     mock_browser.new_page = AsyncMock(return_value=mock_page)
@@ -120,6 +122,24 @@ class TestFetchArticleContentStatic:
         assert result == long_content
 
 
+class TestIsBinaryUrl:
+    def test_pdf_url_is_binary(self) -> None:
+        assert _is_binary_url("https://example.com/report.pdf")
+
+    def test_pdf_url_with_query_string_is_binary(self) -> None:
+        assert _is_binary_url("https://example.com/doc.pdf?token=abc")
+
+    def test_zip_url_is_binary(self) -> None:
+        assert _is_binary_url("https://example.com/archive.zip")
+
+    def test_html_url_is_not_binary(self) -> None:
+        assert not _is_binary_url("https://example.com/article")
+
+    def test_url_with_pdf_in_path_segment_is_not_binary(self) -> None:
+        # Only the final path component matters
+        assert not _is_binary_url("https://example.com/pdf-reports/article")
+
+
 class TestFetchHeadless:
     async def test_returns_extracted_content(self) -> None:
         body = "x" * 300
@@ -155,6 +175,46 @@ class TestFetchHeadless:
             result = await _fetch_headless("https://example.com/article", timeout=10)
 
         assert result == ""
+
+    async def test_skips_binary_urls_without_opening_page(self) -> None:
+        """PDF and other binary URLs must return '' without launching a browser page."""
+        mock_browser = _make_mock_browser()
+
+        with (
+            patch("reddit_rss_cleaner.content_fetcher._browser", mock_browser),
+            patch("reddit_rss_cleaner.content_fetcher._semaphore", asyncio.Semaphore(4)),
+        ):
+            for url in [
+                "https://example.com/paper.pdf",
+                "https://example.com/archive.zip",
+                "https://example.com/installer.exe",
+            ]:
+                result = await _fetch_headless(url, timeout=10)
+                assert result == "", f"expected '' for {url}"
+
+        mock_browser.new_page.assert_not_called()
+
+    async def test_retries_content_on_mid_redirect_race(self) -> None:
+        """If page.content() raises because the page is still navigating, wait for
+        the load state and retry once."""
+        mock_browser = _make_mock_browser()
+        page = mock_browser.new_page.return_value
+        page.content = AsyncMock(
+            side_effect=[
+                Exception("Page.content: Unable to retrieve content because the page is navigating"),
+                "<html><body><p>Article body</p></body></html>",
+            ]
+        )
+
+        with (
+            patch("reddit_rss_cleaner.content_fetcher._browser", mock_browser),
+            patch("reddit_rss_cleaner.content_fetcher._semaphore", asyncio.Semaphore(4)),
+            patch(EXTRACT, return_value="Article body"),
+        ):
+            result = await _fetch_headless("https://example.com/article", timeout=10)
+
+        assert result == "Article body"
+        page.wait_for_load_state.assert_awaited_once_with("load", timeout=10_000)
 
     async def test_goto_uses_domcontentloaded(self) -> None:
         """Regression: wait_until must be domcontentloaded, not networkidle."""
