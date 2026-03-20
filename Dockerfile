@@ -37,10 +37,11 @@ COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app/src /app/src
 
 # curl is needed by external healthcheck probes (e.g. compose/Portainer stacks).
-# pip is upgraded to address known CVEs (fixed in 26.0).
+# pip is removed: the app runs from uv's venv and never invokes pip at runtime,
+# so removing it eliminates CVE surface without any version-pinning toil.
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/* \
-    && pip install --no-cache-dir "pip>=26.0"
+    && pip uninstall -y pip
 
 # Install Chromium for Playwright only when PLAYWRIGHT_ENABLED=true is passed at build time.
 # Usage: docker build --build-arg PLAYWRIGHT_ENABLED=true .
