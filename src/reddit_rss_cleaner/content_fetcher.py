@@ -26,7 +26,11 @@ async def init_playwright() -> None:
         return
     from playwright.async_api import async_playwright  # lazy import
 
-    max_pages = int(os.environ.get("PLAYWRIGHT_CONCURRENCY", "4"))
+    try:
+        max_pages = int(os.environ.get("PLAYWRIGHT_CONCURRENCY", "4"))
+    except ValueError:
+        logger.warning("Invalid PLAYWRIGHT_CONCURRENCY value; defaulting to 4")
+        max_pages = 4
     pw = await async_playwright().start()
     _browser = await pw.chromium.launch()
     _semaphore = asyncio.Semaphore(max_pages)
@@ -80,8 +84,8 @@ def _fetch_static(url: str) -> str:
 
 
 async def _fetch_headless(url: str, timeout: int) -> str:
-    assert _browser is not None
-    assert _semaphore is not None
+    if _browser is None or _semaphore is None:
+        raise RuntimeError("_fetch_headless called before init_playwright()")
     try:
         async with _semaphore:
             page = await _browser.new_page()

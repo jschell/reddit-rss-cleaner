@@ -89,3 +89,63 @@ def test_parsed_entry_fetched_content_can_be_set() -> None:
         fetched_content="<p>full article content</p>",
     )
     assert entry.fetched_content == "<p>full article content</p>"
+
+
+def test_extract_external_url_strips_whitespace_from_link_text() -> None:
+    """[link] anchor text with surrounding whitespace must still match."""
+    html = (
+        '<div><a href="https://example.com/article"> [link] </a>'
+        '<a href="https://reddit.com/comments/abc/">[comments]</a></div>'
+    )
+    url, is_self = extract_external_url(html, "https://fallback.com/")
+    assert url == "https://example.com/article"
+    assert is_self is False
+
+
+def test_parse_feed_entry_with_no_content_or_summary() -> None:
+    """Entries missing both content and summary produce an empty content_html."""
+    rss = """\
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>/r/test</title>
+  <id>https://www.reddit.com/r/test/new/</id>
+  <entry>
+    <title>Bare Entry</title>
+    <id>t3_bare</id>
+    <link href="https://www.reddit.com/r/test/comments/bare/"/>
+    <author><name>/u/someone</name></author>
+    <published>2024-01-01T00:00:00+00:00</published>
+    <updated>2024-01-01T00:00:00+00:00</updated>
+  </entry>
+</feed>
+"""
+    entries = parse_feed(rss)
+    assert len(entries) == 1
+    assert entries[0].title == "Bare Entry"
+    assert entries[0].content_html == ""
+
+
+def test_parse_feed_entry_missing_author_defaults_to_empty_string() -> None:
+    rss = """\
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>/r/test</title>
+  <id>https://www.reddit.com/r/test/new/</id>
+  <entry>
+    <title>No Author</title>
+    <id>t3_noauth</id>
+    <link href="https://www.reddit.com/r/test/comments/noauth/"/>
+    <published>2024-01-01T00:00:00+00:00</published>
+    <updated>2024-01-01T00:00:00+00:00</updated>
+    <content type="html"><![CDATA[<p>hi</p>]]></content>
+  </entry>
+</feed>
+"""
+    entries = parse_feed(rss)
+    assert len(entries) == 1
+    assert entries[0].author == ""
+
+
+def test_parse_feed_empty_xml_returns_empty_list() -> None:
+    entries = parse_feed("<?xml version='1.0'?><feed></feed>")
+    assert entries == []

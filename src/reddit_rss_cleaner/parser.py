@@ -32,7 +32,7 @@ def extract_external_url(entry_html: str, fallback_url: str) -> tuple[str, bool]
     try:
         soup = BeautifulSoup(entry_html, "lxml")
         all_anchors = soup.find_all("a")
-        link_anchor = next((a for a in all_anchors if a.get_text() == "[link]"), None)
+        link_anchor = next((a for a in all_anchors if a.get_text().strip() == "[link]"), None)
         if link_anchor is None:
             return fallback_url, False
         href = link_anchor.get("href", "")
@@ -66,7 +66,7 @@ def parse_feed(raw_rss: str) -> list[ParsedEntry]:
 
         content_html = ""
         raw_content = entry.get("content")
-        if raw_content and isinstance(raw_content, list) and raw_content:
+        if isinstance(raw_content, list) and raw_content:
             content_item = cast("dict[str, Any]", raw_content[0])
             content_html = str(content_item.get("value") or "")
         if not content_html:

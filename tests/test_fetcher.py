@@ -73,3 +73,19 @@ async def test_constructs_correct_url() -> None:
     )
     await fetch_reddit_rss("python", "hot")
     assert route.called
+
+
+@respx.mock
+async def test_raises_on_500() -> None:
+    respx.get(REDDIT_URL).mock(return_value=httpx.Response(500))
+    with pytest.raises(httpx.HTTPStatusError) as exc_info:
+        await fetch_reddit_rss("netsec", "new")
+    assert exc_info.value.response.status_code == 500
+
+
+@respx.mock
+async def test_raises_on_503() -> None:
+    respx.get(REDDIT_URL).mock(return_value=httpx.Response(503))
+    with pytest.raises(httpx.HTTPStatusError) as exc_info:
+        await fetch_reddit_rss("netsec", "new")
+    assert exc_info.value.response.status_code == 503
