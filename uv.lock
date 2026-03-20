@@ -770,6 +770,7 @@ playwright = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "playwright" },
     { name = "pyright" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -792,6 +793,7 @@ provides-extras = ["playwright"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "playwright", specifier = ">=1.40.0" },
     { name = "pyright", specifier = ">=1.1.390" },
     { name = "pytest", specifier = ">=8.0.0" },
     { name = "pytest-asyncio", specifier = ">=0.24.0" },
