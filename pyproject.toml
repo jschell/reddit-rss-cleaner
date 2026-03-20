@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-playwright = ["playwright>=1.40.0"]
+playwright = ["playwright>=1.49.0"]
 
 [project.scripts]
 reddit-rss-cleaner = "reddit_rss_cleaner.main:run"
@@ -32,10 +32,11 @@ dev = [
     "pytest-asyncio>=0.24.0",
     "pyright>=1.1.390",
     "ruff>=0.9.0",
+    "respx>=0.21.0",
     # Included in dev so pyright can resolve playwright types in CI.
     # Production Docker builds use --no-dev and install it only via the
     # optional-dependency group when PLAYWRIGHT_ENABLED=true.
-    "playwright>=1.40.0",
+    "playwright>=1.49.0",
 ]
 
 [tool.ruff]
