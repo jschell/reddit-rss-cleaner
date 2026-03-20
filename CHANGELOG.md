@@ -1,6 +1,30 @@
 # CHANGELOG
 
 
+## v0.3.8 (2026-03-20)
+
+### Bug Fixes
+
+- Remove pip from runtime image instead of pinning a version
+  ([`8889a6c`](https://github.com/jschell/reddit-rss-cleaner/commit/8889a6cc8fa0f81943b6fb6c99959be67252df0b))
+
+pip is never used at runtime — the app runs directly from uv's venv. Removing it eliminates the CVE
+  surface entirely and avoids the ongoing toil of updating a version pin each time a new pip
+  vulnerability is disclosed.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+- Upgrade pip to >=26.0 in runtime image to address CVEs
+  ([`664396e`](https://github.com/jschell/reddit-rss-cleaner/commit/664396eecfffb6359085bfeaba81c7b49ed61eb4))
+
+Two pip vulnerabilities affect the base python:3.12-slim image: - First CVE fixed in pip 25.3 -
+  Second CVE fixed in pip 26.0
+
+Explicitly upgrade pip in the runtime stage to pip>=26.0 to cover both.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+
 ## v0.3.7 (2026-03-20)
 
 ### Bug Fixes
