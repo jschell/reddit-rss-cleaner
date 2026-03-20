@@ -56,7 +56,7 @@ A pre-built image with Chromium included is published to Docker Hub alongside th
 | Tag | Chromium | Size |
 |---|---|---|
 | `latest` | No | small |
-| `latest-playwright` | Yes | ~+600 MB |
+| `latest-playwright` | Yes | ~+500–700 MB (Chromium binary + system deps) |
 
 Versioned tags follow the same pattern: `0.2.0-playwright`, `0.2-playwright`, `0.2-playwright`.
 
