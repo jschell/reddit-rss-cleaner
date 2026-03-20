@@ -108,10 +108,12 @@ async def subreddit_feed(subreddit: str, sort: str) -> Response:
         done, pending = await asyncio.wait(loop_tasks, timeout=content_budget)
         if pending:
             logger.warning(
-                "Content fetching exceeded %ds budget for r/%s/%s; returning feed without content",
+                "Content fetching exceeded %ds budget for r/%s/%s; %d/%d article(s) timed out",
                 content_budget,
                 subreddit,
                 sort,
+                len(pending),
+                len(loop_tasks),
             )
             for t in pending:
                 t.cancel()
