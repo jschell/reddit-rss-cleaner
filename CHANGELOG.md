@@ -1,6 +1,101 @@
 # CHANGELOG
 
 
+## v0.3.7 (2026-03-20)
+
+### Bug Fixes
+
+- Add HEALTHCHECK to Dockerfile so compose service_healthy works
+  ([`d555dcc`](https://github.com/jschell/reddit-rss-cleaner/commit/d555dcc14766e08e7db72daa68c047a7ec822dce))
+
+Without a HEALTHCHECK instruction, Docker never marks the container healthy, so any dependent
+  service using condition: service_healthy causes the "dependency failed to start: container is
+  unhealthy" error.
+
+Uses stdlib urllib (already in the Python image) to probe /health.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+- Handle PDF downloads and mid-redirect race in headless fetcher
+  ([`46d197b`](https://github.com/jschell/reddit-rss-cleaner/commit/46d197b087e13cf5b755ea539208f25f1f549828))
+
+Two Playwright errors observed in production:
+
+1. "Page.goto: Download is starting" — PDF and other binary URLs trigger a browser download instead
+  of a page render. Added _is_binary_url() to detect these by extension and return early, skipping
+  the headless path entirely.
+
+2. "Unable to retrieve content because the page is navigating" — page.content() races with a
+  redirect that fires after domcontentloaded. Now catches the error, waits for the load state, and
+  retries page.content() once.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+- Install curl in runtime image for compose healthcheck
+  ([`cb776eb`](https://github.com/jschell/reddit-rss-cleaner/commit/cb776eb9c1fed6da430c7cb537f941613f0903ab))
+
+The stack healthcheck uses curl -f http://localhost:5000/health but python:3.12-slim does not
+  include curl, causing the container to be marked unhealthy immediately and blocking dependent
+  services.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+### Code Style
+
+- Fix E501 line too long in test_content_fetcher
+  ([`a8f8ee5`](https://github.com/jschell/reddit-rss-cleaner/commit/a8f8ee5dccc6e94f5f0adb06f690d0c7caebb363))
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+- Ruff format content_fetcher.py
+  ([`032bb91`](https://github.com/jschell/reddit-rss-cleaner/commit/032bb9143912465b8c1e6c2d094c1ae338295cfa))
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+### Documentation
+
+- Remove timeout from healthcheck example (Portainer schema compat)
+  ([`3075f70`](https://github.com/jschell/reddit-rss-cleaner/commit/3075f7027ebbea1bbdf45980962a8fc4b55cc656))
+
+Some Portainer versions use a strict compose schema that rejects timeout as a healthcheck property,
+  causing deploy to fail with "Additional property timeout is not allowed".
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+- Restore healthcheck in stack example using curl
+  ([`07c0dfc`](https://github.com/jschell/reddit-rss-cleaner/commit/07c0dfcc5c15b91e8ef7755c1ee09e5246193563))
+
+curl is now installed in the runtime image. Restore the full healthcheck block with curl, including
+  start_period to allow Playwright time to initialise before checks begin.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+- Strip healthcheck to test+retries only for Portainer compat
+  ([`f84d1be`](https://github.com/jschell/reddit-rss-cleaner/commit/f84d1be1316b838066d6761cdf3e2e2bcdc4411a))
+
+This Portainer version rejects interval, timeout, and start_period as additional properties. Keep
+  only test and retries to match the minimal schema it accepts.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+- Update healthcheck example to use python instead of curl
+  ([`d808acf`](https://github.com/jschell/reddit-rss-cleaner/commit/d808acf80036fb37580e0b3e13dd2584e4938669))
+
+curl is not present in python:3.12-slim. Use stdlib urllib via python so no extra packages are
+  needed. Also add start_period: 15s to give Playwright time to initialise before health checks
+  begin counting.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+- Update image size table with measured amd64 and arm64 sizes
+  ([`feb4e39`](https://github.com/jschell/reddit-rss-cleaner/commit/feb4e398d1afca404609909b8a14f3aa671ab0ce))
+
+Replace the single estimated size column with measured values for both architectures. Playwright
+  (Chromium) adds ~910 MB on amd64 and ~638 MB on arm64.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+
 ## v0.3.6 (2026-03-20)
 
 ### Bug Fixes
