@@ -1,6 +1,30 @@
 # CHANGELOG
 
 
+## v0.3.9 (2026-03-20)
+
+### Bug Fixes
+
+- Push slim image last so `latest` tag unambiguously refers to it
+  ([`449077a`](https://github.com/jschell/reddit-rss-cleaner/commit/449077a9bb69d119b118e909edcd33363c26c309))
+
+Docker Hub surfaces the most-recently-pushed image as the apparent default. By building playwright
+  first and slim second, the slim image is always the last write to the repository, ensuring
+  `latest` is never shadowed by the playwright variant.
+
+Also adds an explicit `slim` tag to the slim image so callers can reference it unambiguously
+  regardless of push order.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+### Documentation
+
+- Document slim tag and clarify latest/slim equivalence
+  ([`7d4b620`](https://github.com/jschell/reddit-rss-cleaner/commit/7d4b620f2c2538294f0a58e01a87ce632c7e08e7))
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+
 ## v0.3.8 (2026-03-20)
 
 ### Bug Fixes
