@@ -1,6 +1,38 @@
 # CHANGELOG
 
 
+## v0.3.4 (2026-03-20)
+
+### Bug Fixes
+
+- Bound trafilatura fetch with timeout and clarify budget warning
+  ([`d05dca5`](https://github.com/jschell/reddit-rss-cleaner/commit/d05dca5dc57d31bffd411fca25c6bea0c4c69ce8))
+
+_fetch_static ran in a thread executor with no timeout, allowing a slow site to silently consume the
+  entire per-feed content budget before Playwright even got a chance. Wrap the executor call with
+  asyncio.wait_for so each article's static fetch is bounded by the same `timeout` parameter used
+  for Playwright.
+
+Also fix the misleading "returning feed without content" log message: the code already returns
+  content for any tasks that finished before the budget expired — only the still-pending tasks are
+  dropped. The new message reports the count of timed-out articles vs. total.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+### Documentation
+
+- Document CONTENT_FETCH_BUDGET and PLAYWRIGHT_CONCURRENCY env vars
+  ([`3180a87`](https://github.com/jschell/reddit-rss-cleaner/commit/3180a870dfb4d610913d755f1bc4147095de3dc1))
+
+Add missing CONTENT_FETCH_BUDGET and PLAYWRIGHT_CONCURRENCY to the configuration table with
+  descriptions explaining their relationship to CONTENT_TIMEOUT and Miniflux's CLIENT_TIMEOUT.
+
+Update both compose examples to show the full recommended Playwright configuration including the new
+  env vars, CLIENT_TIMEOUT on the Miniflux service, and a bind mount for the db volume.
+
+https://claude.ai/code/session_01SF8NNxFnfLo3RBvSVuvBJu
+
+
 ## v0.3.3 (2026-03-18)
 
 ### Bug Fixes
