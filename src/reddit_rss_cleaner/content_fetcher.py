@@ -116,6 +116,18 @@ async def _fetch_headless(url: str, timeout: int) -> str:
                 await page.close()
         result: str | None = trafilatura.extract(html, output_format="html", include_comments=False)
         return result or ""
-    except Exception:
-        logger.exception("Playwright fetch failed for %s", url)
+    except Exception as exc:
+        # Playwright's Error base class covers TimeoutError, TargetClosedError,
+        # and network failures (ERR_HTTP2_PROTOCOL_ERROR, ERR_CONNECTION_REFUSED,
+        # etc.).  These are routine fetch failures, not bugs — log without traceback.
+        try:
+            from playwright.async_api import Error as _PlaywrightError  # lazy import
+
+            is_playwright_error = isinstance(exc, _PlaywrightError)
+        except ImportError:
+            is_playwright_error = False
+        if is_playwright_error:
+            logger.warning("Playwright fetch failed for %s: %s", url, exc)
+        else:
+            logger.exception("Playwright fetch failed for %s", url)
         return ""

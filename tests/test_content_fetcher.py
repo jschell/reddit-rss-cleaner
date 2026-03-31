@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import sys
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from reddit_rss_cleaner.content_fetcher import (
     _fetch_headless,  # pyright: ignore[reportPrivateUsage]
@@ -215,6 +218,61 @@ class TestFetchHeadless:
 
         assert result == "Article body"
         page.wait_for_load_state.assert_awaited_once_with("load", timeout=10_000)
+
+    async def test_playwright_timeout_logged_as_warning(self, caplog: pytest.LogCaptureFixture) -> None:
+        """TimeoutError from playwright must be WARNING without traceback, not ERROR."""
+        from playwright.async_api import TimeoutError as PlaywrightTimeoutError
+
+        mock_browser = MagicMock()
+        mock_browser.new_page = AsyncMock(
+            side_effect=PlaywrightTimeoutError("Timeout 15000ms exceeded")
+        )
+
+        with (
+            patch("reddit_rss_cleaner.content_fetcher._browser", mock_browser),
+            patch("reddit_rss_cleaner.content_fetcher._semaphore", asyncio.Semaphore(4)),
+            caplog.at_level(logging.DEBUG, logger="reddit_rss_cleaner.content_fetcher"),
+        ):
+            result = await _fetch_headless("https://example.com/slow", timeout=15)
+
+        assert result == ""
+        assert any(r.levelno == logging.WARNING for r in caplog.records)
+        assert not any(r.levelno >= logging.ERROR for r in caplog.records)
+
+    async def test_playwright_network_error_logged_as_warning(self, caplog: pytest.LogCaptureFixture) -> None:
+        """Network errors (ERR_HTTP2_PROTOCOL_ERROR etc.) must be WARNING, not ERROR."""
+        from playwright.async_api import Error as PlaywrightError
+
+        mock_browser = MagicMock()
+        mock_browser.new_page = AsyncMock(
+            side_effect=PlaywrightError("net::ERR_HTTP2_PROTOCOL_ERROR")
+        )
+
+        with (
+            patch("reddit_rss_cleaner.content_fetcher._browser", mock_browser),
+            patch("reddit_rss_cleaner.content_fetcher._semaphore", asyncio.Semaphore(4)),
+            caplog.at_level(logging.DEBUG, logger="reddit_rss_cleaner.content_fetcher"),
+        ):
+            result = await _fetch_headless("https://example.com/article", timeout=10)
+
+        assert result == ""
+        assert any(r.levelno == logging.WARNING for r in caplog.records)
+        assert not any(r.levelno >= logging.ERROR for r in caplog.records)
+
+    async def test_unexpected_exception_logged_as_error(self, caplog: pytest.LogCaptureFixture) -> None:
+        """Non-playwright exceptions must still log at ERROR with exc_info."""
+        mock_browser = MagicMock()
+        mock_browser.new_page = AsyncMock(side_effect=RuntimeError("unexpected internal error"))
+
+        with (
+            patch("reddit_rss_cleaner.content_fetcher._browser", mock_browser),
+            patch("reddit_rss_cleaner.content_fetcher._semaphore", asyncio.Semaphore(4)),
+            caplog.at_level(logging.DEBUG, logger="reddit_rss_cleaner.content_fetcher"),
+        ):
+            result = await _fetch_headless("https://example.com/article", timeout=10)
+
+        assert result == ""
+        assert any(r.levelno == logging.ERROR and r.exc_info for r in caplog.records)
 
     async def test_goto_uses_domcontentloaded(self) -> None:
         """Regression: wait_until must be domcontentloaded, not networkidle."""
